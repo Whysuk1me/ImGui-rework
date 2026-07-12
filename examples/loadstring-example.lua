@@ -83,6 +83,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local clickCount = 0
 local checkboxState = { value = false }
+local checkboxState2 = { value = true }
 local loaded = true
 local conn
 
@@ -93,7 +94,7 @@ conn = RunService.RenderStepped:Connect(function()
 
 		ImGui.Begin("ImGui-rework", {
 			pos = Vector2.new(100, 100),
-			size = Vector2.new(320, 240),
+			size = Vector2.new(340, 260),
 		})
 
 		ImGui.Text("Loaded via loadstring + HttpGet")
@@ -109,10 +110,15 @@ conn = RunService.RenderStepped:Connect(function()
 		ImGui.Checkbox("Enable feature", checkboxState)
 		ImGui.Text("feature: " .. (checkboxState.value and "ON" or "OFF"))
 
+		ImGui.Checkbox("Another option", checkboxState2)
+
 		ImGui.Separator()
+		ImGui.Text("Drag title bar to move")
+		ImGui.Text("Drag corner to resize")
 		ImGui.Text("RightShift to unload")
 
 		ImGui.End()
+
 		ImGui.EndFrame()
 	end)
 	if not ok2 then

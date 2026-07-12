@@ -57,6 +57,8 @@ Add-Line "    _loaded[name] = result"
 Add-Line "    return result"
 Add-Line "end"
 Add-Line ""
+Add-Line "local require = _require"
+Add-Line ""
 
 foreach ($name in $modules) {
     $path = Join-Path $srcDir "$name.lua"
@@ -74,7 +76,7 @@ foreach ($name in $modules) {
     Add-Line "-- ============================================================"
     Add-Line "-- Module: $name"
     Add-Line "-- ============================================================"
-    Add-Line "define(`"$name`", function(_require)"
+    Add-Line "define(`"$name`", function(require)"
     Add-Line $src
     Add-Line "end)"
     Add-Line ""

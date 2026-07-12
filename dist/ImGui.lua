@@ -21,10 +21,12 @@ local function _require(name)
     return result
 end
 
+local require = _require
+
 -- ============================================================
 -- Module: Util
 -- ============================================================
-define("Util", function(_require)
+define("Util", function(require)
 -- Util.lua — низкоуровневые хелперы.
 -- Math, Rect-операции, FNV1a-хеш (для ID виджетов), создание Vector2.
 
@@ -224,7 +226,7 @@ end)
 -- ============================================================
 -- Module: IdStack
 -- ============================================================
-define("IdStack", function(_require)
+define("IdStack", function(require)
 -- IdStack.lua — стек ID для генерации уникальных ImGuiID виджетов.
 -- Работает как в Dear ImGui: PushID(str) / PushID(ptr) / PopID().
 -- Текущий ID = HashCombine(HashCombine(...stack), HashStr(label)).
@@ -273,7 +275,7 @@ end)
 -- ============================================================
 -- Module: Style
 -- ============================================================
-define("Style", function(_require)
+define("Style", function(require)
 -- Style.lua — цвета, отступы, размеры.
 -- Тёмная тема в стиле оригинального Dear ImGui (Classic Dark).
 
@@ -389,7 +391,7 @@ end)
 -- ============================================================
 -- Module: Input
 -- ============================================================
-define("Input", function(_require)
+define("Input", function(require)
 -- Input.lua — состояние ввода за кадр.
 -- Подписывается на UserInputService и собирает:
 --   - mousePos (Vector2)
@@ -548,7 +550,7 @@ end)
 -- ============================================================
 -- Module: DrawList
 -- ============================================================
-define("DrawList", function(_require)
+define("DrawList", function(require)
 -- DrawList.lua — список draw-команд за кадр.
 -- Виджеты и Window добавляют команды через Add* методы, в конце кадра
 -- Renderer итерирует список и материализует в Drawing-объекты.
@@ -744,7 +746,7 @@ end)
 -- ============================================================
 -- Module: Renderer
 -- ============================================================
-define("Renderer", function(_require)
+define("Renderer", function(require)
 -- Renderer.lua — материализация DrawList в Drawing-объекты.
 --
 -- Каждый кадр Core передаёт нам DrawList. Мы:
@@ -1059,7 +1061,7 @@ end)
 -- ============================================================
 -- Module: Layout
 -- ============================================================
-define("Layout", function(_require)
+define("Layout", function(require)
 -- Layout.lua — auto-layout курсор, ItemRect, SameLine / Indent / Spacing.
 --
 -- Каждый раз когда виджет хочет знать «где меня рисовать», он читает
@@ -1192,7 +1194,7 @@ end)
 -- ============================================================
 -- Module: Window
 -- ============================================================
-define("Window", function(_require)
+define("Window", function(require)
 -- Window.lua — оконная система.
 -- Begin(name, opt) → End().
 -- Окно хранит позицию/размер между кадрами (stateful), поддерживает:
@@ -1468,7 +1470,7 @@ end)
 -- ============================================================
 -- Module: Core
 -- ============================================================
-define("Core", function(_require)
+define("Core", function(require)
 -- Core.lua — глобальный контекст ImGui.
 -- Хранит текущее окно, DrawList, Style, Input, Renderer.
 -- BeginFrame() → (юзерский код Begin/End/Widgets) → EndFrame().
@@ -1562,7 +1564,7 @@ end)
 -- ============================================================
 -- Module: Widgets
 -- ============================================================
-define("Widgets", function(_require)
+define("Widgets", function(require)
 -- Widgets.lua — виджеты MVP.
 -- Button, Text, Checkbox, Separator, Spacing.
 -- Каждый виджет:
@@ -1838,7 +1840,7 @@ end)
 -- ============================================================
 -- Module: ImGui
 -- ============================================================
-define("ImGui", function(_require)
+define("ImGui", function(require)
 -- ImGui.lua — публичный API.
 -- Подключается через require(...).ImGui
 -- Использование:

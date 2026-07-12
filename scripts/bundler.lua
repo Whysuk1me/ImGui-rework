@@ -73,10 +73,16 @@ push("local function _require(name)")
 push("    if _loaded[name] then return _loaded[name] end")
 push("    local fn = _modules[name]")
 push("    if not fn then error('module not found: ' .. name) end")
-push("    local result = fn(_require)")
+push("    -- Параметр функции называется 'require', чтобы затенить")
+push("    -- глобальную Roblox require() внутри тела модуля.")
+push("    local result = fn(require)")
 push("    _loaded[name] = result")
 push("    return result")
 push("end")
+push("")
+push("-- Локальный алиас: модули вызывают require(\"X\") и попадают сюда,")
+push("-- а не в глобальную Roblox require (которая ждёт ModuleScript).")
+push("local require = _require")
 push("")
 
 for _, name in ipairs(modules) do
@@ -87,7 +93,7 @@ for _, name in ipairs(modules) do
     push("-- ============================================================")
     push("-- Module: " .. name)
     push("-- ============================================================")
-    push(string.format('define("%s", function(_require)', name))
+    push(string.format('define("%s", function(require)', name))
 
     -- Уберём первую строку --!strict (она должна быть в начале файла,
     -- а внутри функции вызовет ошибку синтаксиса)

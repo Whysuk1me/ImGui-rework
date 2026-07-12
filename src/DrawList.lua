@@ -170,74 +170,24 @@ function DrawList.AddText(self: DrawList, pos: Vector2, color: Color3, text: str
 end
 
 -- ============================================================
--- Замер текста. Используем скрытый Drawing.Text для точности.
--- TextService:GetTextSize() НЕ совпадает с Drawing API —
--- используем TextBounds реального Drawing-объекта.
+-- Замер текста.
+-- Используем TextService:GetTextSize() (надёжно) с небольшим
+-- padding для компенсации расхождений с Drawing API.
 -- ============================================================
 
-local FONT_SIMPLE = {}
-
-do
-	local MAP = {
-		{ "Code", 3 }, { "CodeBold", 3 },
-		{ "Gotham", 0 }, { "GothamBold", 0 }, { "GothamMedium", 0 }, { "GothamBlack", 0 },
-		{ "Arial", 0 }, { "ArialBold", 0 }, { "UI", 0 },
-		{ "Plex", 2 }, { "RobotoMono", 3 }, { "SourceSans", 2 },
-		{ "SourceSansBold", 2 }, { "SourceSansLight", 2 }, { "SourceSansPro", 2 },
-		{ "Highway", 1 }, { "Cartoon", 1 }, { "Legacy", 1 },
-		{ "Bangers", 1 }, { "Creepster", 1 }, { "DenkOne", 1 },
-		{ "PatrickHand", 1 }, { "PermanentMarker", 1 }, { "LuckiestGuy", 1 },
-		{ "Fondamento", 2 }, { "Kalam", 2 }, { "Merriweather", 2 },
-		{ "Spectral", 2 }, { "TitilliumWeb", 2 }, { "ZillaSlab", 2 },
-		{ "Nunito", 0 }, { "Montserrat", 0 }, { "MontserratBold", 0 },
-		{ "Baloo", 0 }, { "FredokaOne", 0 }, { "Jura", 0 }, { "Michroma", 0 },
-		{ "Oswald", 2 }, { "Roboto", 0 }, { "RobotoBold", 0 },
-		{ "RobotoLight", 0 }, { "RobotoMedium", 0 }, { "RobotoSlab", 2 },
-	}
-	for _, entry in ipairs(MAP) do
-		local ok, font = pcall(function() return Enum.Font[entry[1]] end)
-		if ok and font then
-			FONT_SIMPLE[font] = entry[2]
-		end
-	end
-end
-
--- Скрытый объект для замера текста (создаётся один раз)
-local _textMeasurer = nil
-
-local function ensureMeasurer()
-	if _textMeasurer then return end
-	local ok, obj = pcall(Drawing.new, "Text")
-	if ok and type(obj) == "table" then
-		pcall(function() obj.Visible = false end)
-		_textMeasurer = obj
-	end
-end
+local TextService = game:GetService("TextService")
 
 local function measureText(text: string, font: Enum.Font, size: number): Vector2
-	ensureMeasurer()
-	if _textMeasurer then
-		local num = FONT_SIMPLE[font]
-		if not num then num = 0 end
-		pcall(function()
-			_textMeasurer.Text = text
-			_textMeasurer.Size = size
-			_textMeasurer.Font = num
-			_textMeasurer.Position = Vector2_new(9999, 9999)
-			_textMeasurer.Visible = true
-		end)
-		local b = _textMeasurer.TextBounds
-		pcall(function() _textMeasurer.Visible = false end)
-		if b and b.X > 0 then
-			return Vector2_new(math.ceil(b.X), math.ceil(b.Y))
-		end
-	end
-	-- Fallback — TextService
+	-- TextService — основной способ (всегда работает)
 	local ok, bounds = pcall(function()
-		return game:GetService("TextService"):GetTextSize(text, size, font, Vector2.new(math.huge, math.huge))
+		return TextService:GetTextSize(text, size, font, Vector2.new(math.huge, math.huge))
 	end)
-	if ok and bounds then return bounds end
-	return Vector2_new(#text * size * 0.6, size)
+	if ok and bounds then
+		-- Добавляем padding по высоте для совпадения с Drawing API
+		return Vector2_new(math.ceil(bounds.X), math.ceil(bounds.Y) + 2)
+	end
+	-- Fallback — грубая оценка по длине строки
+	return Vector2_new(math.ceil(#text * size * 0.6), size + 2)
 end
 
 -- Публичный хелпер

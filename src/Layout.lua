@@ -114,6 +114,7 @@ function Layout.ItemSize(self: Layout, size: Vector2, spacing: Vector2)
 	if self.sameLine then
 		self.cursor = Vector2_new(pos.X + size.X + spacing.X, pos.Y)
 		self.lineWidth = self.lineWidth + size.X + spacing.X
+		self.sameLine = false
 	else
 		self.cursor = Vector2_new(self.origin.X + self.indentX, pos.Y + size.Y + spacing.Y)
 		self.lineHeight = size.Y

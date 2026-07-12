@@ -793,11 +793,16 @@ local function measureText(text: string, font: Enum.Font, size: number): Vector2
 			_textMeasurer.Text = text
 			_textMeasurer.Size = size
 			_textMeasurer.Font = num
+			_textMeasurer.Position = Vector2_new(9999, 9999)
+			_textMeasurer.Visible = true
 		end)
 		local b = _textMeasurer.TextBounds
-		return Vector2_new(math.ceil(b.X), math.ceil(b.Y))
+		pcall(function() _textMeasurer.Visible = false end)
+		if b and b.X > 0 then
+			return Vector2_new(math.ceil(b.X), math.ceil(b.Y))
+		end
 	end
-	-- Fallback — TextService (если Drawing недоступен)
+	-- Fallback — TextService
 	local ok, bounds = pcall(function()
 		return game:GetService("TextService"):GetTextSize(text, size, font, Vector2.new(math.huge, math.huge))
 	end)
@@ -1571,7 +1576,7 @@ function Window._DrawWindow(drawList, style, w, mousePos)
 
 	-- Title text
 	drawList:AddText(
-		Vector2_new(p0.X + style.WindowPadding.X, p0.Y + (titleH - 14) / 2),
+		Vector2_new(p0.X + style.WindowPadding.X, p0.Y + 4),
 		col.Text,
 		w.name,
 		Enum.Font.Code,

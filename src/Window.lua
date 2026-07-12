@@ -231,7 +231,7 @@ function Window._DrawWindow(drawList, style, w, mousePos)
 
 	-- Title text
 	drawList:AddText(
-		Vector2_new(p0.X + style.WindowPadding.X, p0.Y + (titleH - 14) / 2),
+		Vector2_new(p0.X + style.WindowPadding.X, p0.Y + 4),
 		col.Text,
 		w.name,
 		Enum.Font.Code,

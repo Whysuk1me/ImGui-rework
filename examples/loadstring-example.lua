@@ -1,89 +1,58 @@
--- loadstring-example.lua — пример загрузки ImGui-rework через raw GitHub URL.
+-- loadstring-example.lua — минимальный тест: одна кнопка + текст.
+-- Если это работает — значит движок рабочий.
 
 local IMGUI_URL = "https://raw.githubusercontent.com/Whysuk1me/ImGui-rework/main/dist/ImGui.lua"
 
--- ============================================================
--- HTTP-загрузчик с перебором бэкендов
--- ============================================================
 local function fetch(url)
 	local ok, res = pcall(function() return game:HttpGet(url) end)
 	if ok and type(res) == "string" and #res > 0 then return res end
-
-	if game.HttpGetAsync then
-		ok, res = pcall(function() return game:HttpGetAsync(url) end)
-		if ok and type(res) == "string" and #res > 0 then return res end
-	end
-
 	local req = request or http_request
 	if req then
 		ok, res = pcall(function() return req({ Url = url, Method = "GET" }) end)
-		if ok and res and type(res.Body) == "string" and #res.Body > 0 then return res.Body end
-		if ok and type(res) == "string" and #res > 0 then return res end
-	end
-
-	if syn and syn.request then
-		ok, res = pcall(function() return syn.request({ Url = url, Method = "GET" }) end)
+		if ok and res and type(res) == "string" and #res > 0 then return res end
 		if ok and res and type(res.Body) == "string" and #res.Body > 0 then return res.Body end
 	end
-
-	if http_get then
-		ok, res = pcall(function() return http_get(url) end)
-		if ok and type(res) == "string" and #res > 0 then return res end
-	end
-
-	return nil, "no http backend returned data"
+	return nil, "no http"
 end
 
--- ============================================================
 -- 1. Скачать
--- ============================================================
 local source, fetchErr = fetch(IMGUI_URL)
 if not source then
-	warn("[ImGui-rework] не удалось скачать бандл: " .. tostring(fetchErr))
+	warn("[ImGui] fetch failed: " .. tostring(fetchErr))
 	return
 end
-
-if #source < 100 or not source:find("Virtual module loader", 1, true) then
-	warn("[ImGui-rework] HttpGet вернул не код ImGui. Первые 300 байт:")
-	warn(source:sub(1, 300))
-	return
-end
+print("[ImGui] downloaded " .. #source .. " bytes")
 
 -- 2. Компиляция
 local fn, parseErr = loadstring(source)
 if not fn then
-	warn("[ImGui-rework] loadstring не смог скомпилировать бандл:")
-	warn(tostring(parseErr))
+	warn("[ImGui] compile failed: " .. tostring(parseErr))
 	return
 end
+print("[ImGui] compiled OK")
 
 -- 3. Запуск
 local ok, result = pcall(fn)
 if not ok or type(result) ~= "table" then
-	warn("[ImGui-rework] запуск бандла упал:")
-	warn(tostring(result))
+	warn("[ImGui] run failed: " .. tostring(result))
 	return
 end
-
 local ImGui = result
+print("[ImGui] module loaded")
 
 -- 4. Init
 local initOk, initErr = pcall(ImGui.Init)
 if not initOk then
-	warn("[ImGui-rework] ImGui.Init упал:")
-	warn(tostring(initErr))
+	warn("[ImGui] Init failed: " .. tostring(initErr))
 	return
 end
+print("[ImGui] Init OK")
 
--- ============================================================
--- Main loop
--- ============================================================
+-- 5. Main loop — одна кнопка + текст
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
-local clickCount = 0
-local checkboxState = { value = false }
-local checkboxState2 = { value = true }
+local clicks = 0
 local loaded = true
 local conn
 
@@ -92,62 +61,35 @@ conn = RunService.RenderStepped:Connect(function()
 	local ok2, err2 = pcall(function()
 		ImGui.BeginFrame()
 
-		if ImGui.Begin("ImGui-rework", {
+		ImGui.Begin("Test", {
 			pos = Vector2.new(100, 100),
-			size = Vector2.new(340, 300),
-		}) then
+			size = Vector2.new(220, 100),
+		})
 
-			ImGui.Text("Loaded via loadstring + HttpGet")
-			ImGui.Separator()
-
-			-- Buttons
-			if ImGui.Button("Press me") then
-				clickCount += 1
-			end
-			ImGui.SameLine()
-			ImGui.Text("count: " .. tostring(clickCount))
-
-			ImGui.Separator()
-
-			-- Checkboxes
-			ImGui.Checkbox("Enable feature", checkboxState)
-			ImGui.Checkbox("Another option", checkboxState2)
-
-			ImGui.Separator()
-
-			-- Indent demo
-			ImGui.Text("Indented text:")
-			ImGui.Indent()
-			ImGui.Text("level 1")
-			ImGui.Indent()
-			ImGui.Text("level 2")
-			ImGui.Unindent()
-			ImGui.Text("back to level 1")
-			ImGui.Unindent()
-
-			ImGui.Separator()
-			ImGui.Text("Drag title bar to move")
-			ImGui.Text("Drag corner to resize")
-			ImGui.Text("RightShift to unload")
-
+		if ImGui.Button("Click me") then
+			clicks += 1
 		end
-		ImGui.End()
 
+		ImGui.Text("Clicks: " .. tostring(clicks))
+
+		ImGui.End()
 		ImGui.EndFrame()
 	end)
 	if not ok2 then
-		warn("[ImGui-rework] frame error: " .. tostring(err2))
+		warn("[ImGui] frame error: " .. tostring(err2))
+		loaded = false
+		if conn then conn:Disconnect() end
+		pcall(ImGui.Destroy)
 	end
 end)
 
--- Выгрузка по RightShift (без проверки gameProcessed)
-UserInputService.InputBegan:Connect(function(input, gp)
+UserInputService.InputBegan:Connect(function(input)
 	if input.KeyCode == Enum.KeyCode.RightShift then
 		loaded = false
 		if conn then conn:Disconnect() end
 		pcall(ImGui.Destroy)
-		print("[ImGui-rework] unloaded")
+		print("[ImGui] unloaded")
 	end
 end)
 
-print("[ImGui-rework] loaded. Press RightShift to unload.")
+print("[ImGui] running. RightShift to unload.")

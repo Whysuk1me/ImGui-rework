@@ -92,31 +92,45 @@ conn = RunService.RenderStepped:Connect(function()
 	local ok2, err2 = pcall(function()
 		ImGui.BeginFrame()
 
-		ImGui.Begin("ImGui-rework", {
+		if ImGui.Begin("ImGui-rework", {
 			pos = Vector2.new(100, 100),
-			size = Vector2.new(340, 260),
-		})
+			size = Vector2.new(340, 300),
+		}) then
 
-		ImGui.Text("Loaded via loadstring + HttpGet")
-		ImGui.Separator()
+			ImGui.Text("Loaded via loadstring + HttpGet")
+			ImGui.Separator()
 
-		if ImGui.Button("Press me") then
-			clickCount += 1
+			-- Buttons
+			if ImGui.Button("Press me") then
+				clickCount += 1
+			end
+			ImGui.SameLine()
+			ImGui.Text("count: " .. tostring(clickCount))
+
+			ImGui.Separator()
+
+			-- Checkboxes
+			ImGui.Checkbox("Enable feature", checkboxState)
+			ImGui.Checkbox("Another option", checkboxState2)
+
+			ImGui.Separator()
+
+			-- Indent demo
+			ImGui.Text("Indented text:")
+			ImGui.Indent()
+			ImGui.Text("level 1")
+			ImGui.Indent()
+			ImGui.Text("level 2")
+			ImGui.Unindent()
+			ImGui.Text("back to level 1")
+			ImGui.Unindent()
+
+			ImGui.Separator()
+			ImGui.Text("Drag title bar to move")
+			ImGui.Text("Drag corner to resize")
+			ImGui.Text("RightShift to unload")
+
 		end
-
-		ImGui.SameLine()
-		ImGui.Text("count: " .. tostring(clickCount))
-
-		ImGui.Checkbox("Enable feature", checkboxState)
-		ImGui.Text("feature: " .. (checkboxState.value and "ON" or "OFF"))
-
-		ImGui.Checkbox("Another option", checkboxState2)
-
-		ImGui.Separator()
-		ImGui.Text("Drag title bar to move")
-		ImGui.Text("Drag corner to resize")
-		ImGui.Text("RightShift to unload")
-
 		ImGui.End()
 
 		ImGui.EndFrame()

@@ -1034,66 +1034,70 @@ end
 -- Drawing API Font: 0=UI, 1=System, 2=Plex, 3=Monospace, 4=Arial, 5=Highway,
 -- 6=SourceSans, 7=SourceSansBold
 --
--- Важно: не все Enum.Font значения существуют во всех версиях Roblox/эксплойтов,
--- поэтому строим карту defensively через pcall.
+-- Важно: не все Enum.Font значения существуют во всех версиях Roblox/эксплойтов.
+-- Доступ к Enum.Font.UI при отсутствии члена бросает ошибку, поэтому
+-- ищем шрифт по имени строки ВНУТРИ pcall.
 local FONT_MAP: { [any]: number } = {}
 
-local function tryAddFont(enumValue: any, num: number)
-	local ok = pcall(function()
-		-- Проверяем, что enumValue действительно валидный EnumItem
-		local _ = enumValue.Name
-		_ = enumValue.Value
-	end)
-	if ok then
-		FONT_MAP[enumValue] = num
-	end
-end
+-- Пары {имя, номер}. Имя ищется через Enum.Font[name] внутри pcall.
+local FONT_NAMES: { [number]: { string, number } } = {
+	{ "UI", 0 },
+	{ "System", 1 },
+	{ "Plex", 2 },
+	{ "Monospace", 3 },
+	{ "Arial", 4 },
+	{ "ArialBold", 4 },
+	{ "Highway", 5 },
+	{ "SourceSans", 6 },
+	{ "SourceSansBold", 7 },
+	{ "Code", 3 },
+	{ "Roboto", 6 },
+	{ "RobotoMono", 3 },
+	{ "Gotham", 6 },
+	{ "GothamMedium", 6 },
+	{ "GothamBold", 7 },
+	{ "GothamBlack", 7 },
+	{ "Montserrat", 6 },
+	{ "MontserratBold", 7 },
+	{ "Baloo", 6 },
+	{ "BalooBold", 7 },
+	{ "Bangers", 6 },
+	{ "Creepster", 6 },
+	{ "DenkOne", 6 },
+	{ "Fondamento", 6 },
+	{ "FredokaOne", 6 },
+	{ "Jura", 6 },
+	{ "JuraBold", 7 },
+	{ "Kalam", 6 },
+	{ "LuckiestGuy", 6 },
+	{ "Merriweather", 6 },
+	{ "Michroma", 6 },
+	{ "Nunito", 6 },
+	{ "Oswald", 6 },
+	{ "OswaldBold", 7 },
+	{ "PatrickHand", 6 },
+	{ "PermanentMarker", 6 },
+	{ "RobotoCondensed", 6 },
+	{ "RobotoCondensedBold", 7 },
+	{ "Spectral", 6 },
+	{ "SpectralBold", 7 },
+	{ "TitilliumWeb", 6 },
+	{ "TitilliumWebBold", 7 },
+	{ "ZillaSlab", 6 },
+	{ "ZillaSlabBold", 7 },
+}
 
 local function buildFontMap()
-	tryAddFont(Enum.Font.UI, 0)
-	tryAddFont(Enum.Font.System, 1)
-	tryAddFont(Enum.Font.Plex, 2)
-	tryAddFont(Enum.Font.Monospace, 3)
-	tryAddFont(Enum.Font.Arial, 4)
-	tryAddFont(Enum.Font.ArialBold, 4)
-	tryAddFont(Enum.Font.Highway, 5)
-	tryAddFont(Enum.Font.SourceSans, 6)
-	tryAddFont(Enum.Font.SourceSansBold, 7)
-	tryAddFont(Enum.Font.Code, 3)
-	tryAddFont(Enum.Font.Roboto, 6)
-	tryAddFont(Enum.Font.RobotoMono, 3)
-	tryAddFont(Enum.Font.Gotham, 6)
-	tryAddFont(Enum.Font.GothamMedium, 6)
-	tryAddFont(Enum.Font.GothamBold, 7)
-	tryAddFont(Enum.Font.GothamBlack, 7)
-	tryAddFont(Enum.Font.Montserrat, 6)
-	tryAddFont(Enum.Font.MontserratBold, 7)
-	tryAddFont(Enum.Font.Baloo, 6)
-	tryAddFont(Enum.Font.BalooBold, 7)
-	tryAddFont(Enum.Font.Bangers, 6)
-	tryAddFont(Enum.Font.Creepster, 6)
-	tryAddFont(Enum.Font.DenkOne, 6)
-	tryAddFont(Enum.Font.Fondamento, 6)
-	tryAddFont(Enum.Font.FredokaOne, 6)
-	tryAddFont(Enum.Font.Jura, 6)
-	tryAddFont(Enum.Font.JuraBold, 7)
-	tryAddFont(Enum.Font.Kalam, 6)
-	tryAddFont(Enum.Font.LuckiestGuy, 6)
-	tryAddFont(Enum.Font.Merriweather, 6)
-	tryAddFont(Enum.Font.Michroma, 6)
-	tryAddFont(Enum.Font.Nunito, 6)
-	tryAddFont(Enum.Font.Oswald, 6)
-	tryAddFont(Enum.Font.OswaldBold, 7)
-	tryAddFont(Enum.Font.PatrickHand, 6)
-	tryAddFont(Enum.Font.PermanentMarker, 6)
-	tryAddFont(Enum.Font.RobotoCondensed, 6)
-	tryAddFont(Enum.Font.RobotoCondensedBold, 7)
-	tryAddFont(Enum.Font.Spectral, 6)
-	tryAddFont(Enum.Font.SpectralBold, 7)
-	tryAddFont(Enum.Font.TitilliumWeb, 6)
-	tryAddFont(Enum.Font.TitilliumWebBold, 7)
-	tryAddFont(Enum.Font.ZillaSlab, 6)
-	tryAddFont(Enum.Font.ZillaSlabBold, 7)
+	for i = 1, #FONT_NAMES do
+		local entry = FONT_NAMES[i]
+		local name, num = entry[1], entry[2]
+		local ok, font = pcall(function()
+			return Enum.Font[name]
+		end)
+		if ok and font then
+			FONT_MAP[font] = num
+		end
+	end
 end
 
 buildFontMap()

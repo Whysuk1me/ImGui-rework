@@ -269,13 +269,78 @@ function Renderer._renderText(self: RenderPool, idx: number, cmd: any, clip: any
 	obj.Text = cmd.text
 	obj.Color = cmd.color
 	obj.Size = cmd.textSize or 14
-	obj.Font = cmd.font or 0
+	obj.Font = Renderer._fontToNumber(cmd.font)
 	obj.Center = false
 	obj.Outline = false
 	obj.Visible = true
 
 	-- Clip для текста — пока простой: скрываем если центр за пределами.
 	-- Правильная реализация потребует TextBounds-aware проверки, оставим на следующий шаг.
+end
+
+-- Конвертация Enum.Font в число, которое ждёт Drawing API.
+-- Drawing API Font: 0=UI, 1=System, 2=Plex, 3=Monospace, 4=Arial, 5=Highway,
+-- 6=SourceSans, 7=SourceSansBold
+local FONT_MAP = {
+	[Enum.Font.UI]             = 0,
+	[Enum.Font.System]         = 1,
+	[Enum.Font.Plex]           = 2,
+	[Enum.Font.Monospace]      = 3,
+	[Enum.Font.Arial]          = 4,
+	[Enum.Font.ArialBold]      = 4,
+	[Enum.Font.Highway]        = 5,
+	[Enum.Font.SourceSans]     = 6,
+	[Enum.Font.SourceSansBold] = 7,
+	[Enum.Font.Code]           = 3, -- Monospace-like
+	[Enum.Font.Roboto]        = 6,
+	[Enum.Font.RobotoMono]    = 3,
+	[Enum.Font.Gotham]        = 6,
+	[Enum.Font.GothamMedium]  = 6,
+	[Enum.Font.GothamBold]    = 7,
+	[Enum.Font.GothamBlack]   = 7,
+	[Enum.Font.Montserrat]    = 6,
+	[Enum.Font.MontserratBold]= 7,
+	[Enum.Font.Baloo]         = 6,
+	[Enum.Font.BalooBold]      = 7,
+	[Enum.Font.Bangers]       = 6,
+	[Enum.Font.Creepster]     = 6,
+	[Enum.Font.DenkOne]       = 6,
+	[Enum.Font.Fondamento]    = 6,
+	[Enum.Font.FredokaOne]    = 6,
+	[Enum.Font.GranumSans]    = 6,
+	[Enum.Font.Jura]          = 6,
+	[Enum.Font.JuraBold]      = 7,
+	[Enum.Font.Kalam]         = 6,
+	[Enum.Font.LuckiestGuy]  = 6,
+	[Enum.Font.Merriweather]  = 6,
+	[Enum.Font.Michroma]     = 6,
+	[Enum.Font.Nunito]       = 6,
+	[Enum.Font.Oswald]       = 6,
+	[Enum.Font.OswaldBold]   = 7,
+	[Enum.Font.PatrickHand]  = 6,
+	[Enum.Font.PermaSignal]  = 6,
+	[Enum.Font.PermanentMarker] = 6,
+	[Enum.Font.RobotoCondensed] = 6,
+	[Enum.Font.RobotoCondensedBold] = 7,
+	[Enum.Font.Spectral]     = 6,
+	[Enum.Font.SpectralBold] = 7,
+	[Enum.Font.TitilliumWeb]  = 6,
+	[Enum.Font.TitilliumWebBold] =  Enum.Font.TitilliumWebBold and 7 or 7,
+	[Enum.Font.ZillaSlab]    = 6,
+	[Enum.Font.ZillaSlabBold] = 7,
+}
+
+function Renderer._fontToNumber(font: any): number
+	if type(font) == "number" then return font end
+	if not font then return 0 end
+	local n = FONT_MAP[font]
+	if n then return n end
+	-- Fallback: EnumItem.Value
+	if typeof(font) == "EnumItem" then
+		local v = font.Value
+		if type(v) == "number" then return v end
+	end
+	return 0
 end
 
 -- ============================================================

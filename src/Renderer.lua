@@ -285,10 +285,10 @@ end
 -- Важно: не все Enum.Font значения существуют во всех версиях Roblox/эксплойтов.
 -- Доступ к Enum.Font.UI при отсутствии члена бросает ошибку, поэтому
 -- ищем шрифт по имени строки ВНУТРИ pcall.
-local FONT_MAP: { [any]: number } = {}
+local FONT_MAP = {}
 
 -- Пары {имя, номер}. Имя ищется через Enum.Font[name] внутри pcall.
-local FONT_NAMES: { [number]: { string, number } } = {
+local FONT_NAMES = {
 	{ "UI", 0 },
 	{ "System", 1 },
 	{ "Plex", 2 },

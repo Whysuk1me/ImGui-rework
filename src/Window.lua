@@ -58,8 +58,8 @@ export type Window = {
 
 -- Хранилище окон по имени (stateful между кадрами)
 -- Ключ — name (string), значение — Window
-local _windows: { [string]: Window } = {}
-local _order: { Window } = {} -- упорядоченный список (z-order)
+local _windows = {}
+local _order = {} -- упорядоченный список (z-order)
 local _focusCounter = 0
 
 -- Найти окно по имени (создать если не существует)

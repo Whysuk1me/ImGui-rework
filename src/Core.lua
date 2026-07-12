@@ -29,7 +29,7 @@ export type Context = {
 -- Forward-объявление типа (Renderer.RenderPool не экспортируется через type)
 type RenderPool = any
 
-local _ctx: Context? = nil
+local _ctx = nil
 
 function Core.new(): Context
 	local ctx = {

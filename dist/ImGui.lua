@@ -1037,10 +1037,10 @@ end
 -- Важно: не все Enum.Font значения существуют во всех версиях Roblox/эксплойтов.
 -- Доступ к Enum.Font.UI при отсутствии члена бросает ошибку, поэтому
 -- ищем шрифт по имени строки ВНУТРИ pcall.
-local FONT_MAP: { [any]: number } = {}
+local FONT_MAP = {}
 
 -- Пары {имя, номер}. Имя ищется через Enum.Font[name] внутри pcall.
-local FONT_NAMES: { [number]: { string, number } } = {
+local FONT_NAMES = {
 	{ "UI", 0 },
 	{ "System", 1 },
 	{ "Plex", 2 },
@@ -1347,8 +1347,8 @@ export type Window = {
 
 -- Хранилище окон по имени (stateful между кадрами)
 -- Ключ — name (string), значение — Window
-local _windows: { [string]: Window } = {}
-local _order: { Window } = {} -- упорядоченный список (z-order)
+local _windows = {}
+local _order = {} -- упорядоченный список (z-order)
 local _focusCounter = 0
 
 -- Найти окно по имени (создать если не существует)
@@ -1594,7 +1594,7 @@ export type Context = {
 -- Forward-объявление типа (Renderer.RenderPool не экспортируется через type)
 type RenderPool = any
 
-local _ctx: Context? = nil
+local _ctx = nil
 
 function Core.new(): Context
 	local ctx = {
@@ -1693,7 +1693,7 @@ end
 
 -- Доступ к глобальному контексту через Window._getCore()
 -- (устанавливается в Core.new через _setCoreRef).
-local _coreRef: any = nil
+local _coreRef = nil
 function Widgets._setCoreRef(c)
 	_coreRef = c
 end

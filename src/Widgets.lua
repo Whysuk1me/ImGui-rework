@@ -34,7 +34,7 @@ end
 
 -- Доступ к глобальному контексту через Window._getCore()
 -- (устанавливается в Core.new через _setCoreRef).
-local _coreRef: any = nil
+local _coreRef = nil
 function Widgets._setCoreRef(c)
 	_coreRef = c
 end

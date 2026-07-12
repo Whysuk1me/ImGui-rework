@@ -777,10 +777,12 @@ end
 -- Безопасное создание Drawing-объекта.
 local function newDrawing(kind)
 	local ok, obj = pcall(Drawing.new, kind)
-	if not ok or not obj then
-		error('Renderer: Drawing.new("' .. kind .. '") failed — Drawing API unavailable')
+	-- Проверяем, что результат — таблица или userdata (не nil/0/false/строка).
+	-- Некоторые эксплойты возвращают 0 для неподдерживаемых типов.
+	if not ok or obj == nil or (type(obj) ~= "table" and type(obj) ~= "userdata") then
+		return nil
 	end
-	obj.Visible = false
+	pcall(function() obj.Visible = false end)
 	return obj
 end
 
@@ -814,8 +816,10 @@ end
 local function hideTail(pool, fromIdx)
 	for i = fromIdx, #pool do
 		local obj = pool[i]
-		if obj and obj.Visible then
-			obj.Visible = false
+		if obj then
+			pcall(function()
+				if obj.Visible then obj.Visible = false end
+			end)
 		end
 	end
 end
@@ -874,50 +878,53 @@ end
 
 function Renderer._renderLine(self, idx, z, cmd, clip)
 	local obj = getOrCreate(self.Line, "Line", idx)
-	if not cmd.p0 or not cmd.p1 then obj.Visible = false; return end
+	if not obj then return end
+	if not cmd.p0 or not cmd.p1 then setProp(obj, "Visible", false); return end
 
 	local p0, p1 = cmd.p0, cmd.p1
 	if clip then
 		p0, p1 = Util.RectClipLine(clip, p0, p1)
 	end
 
-	obj.From = p0
-	obj.To = p1
-	obj.Color = cmd.color
-	obj.Thickness = cmd.thickness
+	setProp(obj, "From", p0)
+	setProp(obj, "To", p1)
+	setProp(obj, "Color", cmd.color)
+	setProp(obj, "Thickness", cmd.thickness)
 	setProp(obj, "ZIndex", z)
-	obj.Visible = true
+	setProp(obj, "Visible", true)
 end
 
 function Renderer._renderRect(self, idx, z, cmd, clip)
 	local obj = getOrCreate(self.Rect, "Square", idx)
-	if not cmd.p0 or not cmd.p1 then obj.Visible = false; return end
+	if not obj then return end
+	if not cmd.p0 or not cmd.p1 then setProp(obj, "Visible", false); return end
 
 	local p0, p1 = cmd.p0, cmd.p1
 	if clip then
 		local clipped = Util.RectClip({ min = p0, max = p1 }, clip)
-		if not clipped then obj.Visible = false; return end
+		if not clipped then setProp(obj, "Visible", false); return end
 		p0, p1 = clipped.min, clipped.max
 	end
 
-	obj.Position = p0
-	obj.Size = Vector2.new(p1.X - p0.X, p1.Y - p0.Y)
-	obj.Color = cmd.color
-	obj.Thickness = cmd.thickness
-	obj.Filled = false
+	setProp(obj, "Position", p0)
+	setProp(obj, "Size", Vector2.new(p1.X - p0.X, p1.Y - p0.Y))
+	setProp(obj, "Color", cmd.color)
+	setProp(obj, "Thickness", cmd.thickness)
+	setProp(obj, "Filled", false)
 	setProp(obj, "Radius", cmd.rounding or 0)
 	setProp(obj, "ZIndex", z)
-	obj.Visible = true
+	setProp(obj, "Visible", true)
 end
 
 function Renderer._renderRectFilled(self, idx, z, cmd, clip)
 	local obj = getOrCreate(self.RectFilled, "Square", idx)
-	if not cmd.p0 or not cmd.p1 then obj.Visible = false; return end
+	if not obj then return end
+	if not cmd.p0 or not cmd.p1 then setProp(obj, "Visible", false); return end
 
 	local p0, p1 = cmd.p0, cmd.p1
 	if clip then
 		local clipped = Util.RectClip({ min = p0, max = p1 }, clip)
-		if not clipped then obj.Visible = false; return end
+		if not clipped then setProp(obj, "Visible", false); return end
 		p0, p1 = clipped.min, clipped.max
 	end
 
@@ -926,29 +933,43 @@ function Renderer._renderRectFilled(self, idx, z, cmd, clip)
 	if w < 1 then w = 1 end
 	if h < 1 then h = 1 end
 
-	obj.Position = p0
-	obj.Size = Vector2.new(w, h)
-	obj.Color = cmd.color
-	obj.Filled = true
-	obj.Thickness = 0
+	setProp(obj, "Position", p0)
+	setProp(obj, "Size", Vector2.new(w, h))
+	setProp(obj, "Color", cmd.color)
+	setProp(obj, "Filled", true)
+	setProp(obj, "Thickness", 0)
 	setProp(obj, "Radius", cmd.rounding or 0)
 	setProp(obj, "ZIndex", z)
-	obj.Visible = true
+	setProp(obj, "Visible", true)
 end
 
 function Renderer._renderTriangle(self, idx, z, cmd, clip)
 	if not cmd.p0 or not cmd.p1 or not cmd.p2 then return end
-	-- Пытаемся использовать нативный Triangle, fallback — 3 линии
 	local obj = getOrCreate(self.Triangle, "Triangle", idx)
 	if obj then
-		obj.PointA = cmd.p0
-		obj.PointB = cmd.p1
-		obj.PointC = cmd.p2
-		obj.Color = cmd.color
-		obj.Thickness = cmd.thickness
-		obj.Filled = false
+		setProp(obj, "PointA", cmd.p0)
+		setProp(obj, "PointB", cmd.p1)
+		setProp(obj, "PointC", cmd.p2)
+		setProp(obj, "Color", cmd.color)
+		setProp(obj, "Thickness", cmd.thickness)
+		setProp(obj, "Filled", false)
 		setProp(obj, "ZIndex", z)
-		obj.Visible = true
+		setProp(obj, "Visible", true)
+	else
+		-- Fallback: 3 линии
+		local pts = { cmd.p0, cmd.p1, cmd.p2 }
+		for i = 1, 3 do
+			local li = (idx - 1) * 3 + i
+			local lobj = getOrCreate(self.Triangle, "Line", li)
+			if lobj then
+				setProp(lobj, "From", pts[i])
+				setProp(lobj, "To", pts[(i % 3) + 1])
+				setProp(lobj, "Color", cmd.color)
+				setProp(lobj, "Thickness", cmd.thickness)
+				setProp(lobj, "ZIndex", z)
+				setProp(lobj, "Visible", true)
+			end
+		end
 	end
 end
 
@@ -956,58 +977,76 @@ function Renderer._renderTriangleFilled(self, idx, z, cmd, clip)
 	if not cmd.p0 or not cmd.p1 or not cmd.p2 then return end
 	local obj = getOrCreate(self.TriangleFilled, "Triangle", idx)
 	if obj then
-		obj.PointA = cmd.p0
-		obj.PointB = cmd.p1
-		obj.PointC = cmd.p2
-		obj.Color = cmd.color
-		obj.Filled = true
-		obj.Thickness = 0
+		setProp(obj, "PointA", cmd.p0)
+		setProp(obj, "PointB", cmd.p1)
+		setProp(obj, "PointC", cmd.p2)
+		setProp(obj, "Color", cmd.color)
+		setProp(obj, "Filled", true)
+		setProp(obj, "Thickness", 0)
 		setProp(obj, "ZIndex", z)
-		obj.Visible = true
+		setProp(obj, "Visible", true)
+	else
+		-- Fallback: рисуем bounding-box Square как приближение
+		local sobj = getOrCreate(self.TriangleFilled, "Square", idx)
+		if sobj then
+			local minX = math.min(cmd.p0.X, cmd.p1.X, cmd.p2.X)
+			local minY = math.min(cmd.p0.Y, cmd.p1.Y, cmd.p2.Y)
+			local maxX = math.max(cmd.p0.X, cmd.p1.X, cmd.p2.X)
+			local maxY = math.max(cmd.p0.Y, cmd.p1.Y, cmd.p2.Y)
+			setProp(sobj, "Position", Vector2.new(minX, minY))
+			setProp(sobj, "Size", Vector2.new(maxX - minX, maxY - minY))
+			setProp(sobj, "Color", cmd.color)
+			setProp(sobj, "Filled", true)
+			setProp(sobj, "ZIndex", z)
+			setProp(sobj, "Visible", true)
+		end
 	end
 end
 
 function Renderer._renderCircle(self, idx, z, cmd, clip)
 	local obj = getOrCreate(self.Circle, "Circle", idx)
-	if not cmd.center then obj.Visible = false; return end
+	if not obj then return end
+	if not cmd.center then setProp(obj, "Visible", false); return end
 
-	obj.Position = cmd.center
-	obj.Radius = cmd.radius
-	obj.Color = cmd.color
-	obj.Thickness = cmd.thickness
-	obj.Filled = false
+	setProp(obj, "Position", cmd.center)
+	setProp(obj, "Radius", cmd.radius)
+	setProp(obj, "Color", cmd.color)
+	setProp(obj, "Thickness", cmd.thickness)
+	setProp(obj, "Filled", false)
 	setProp(obj, "NumSides", 30)
 	setProp(obj, "ZIndex", z)
-	obj.Visible = true
+	setProp(obj, "Visible", true)
 end
 
 function Renderer._renderCircleFilled(self, idx, z, cmd, clip)
 	local obj = getOrCreate(self.CircleFilled, "Circle", idx)
-	if not cmd.center then obj.Visible = false; return end
+	if not obj then return end
+	if not cmd.center then setProp(obj, "Visible", false); return end
 
-	obj.Position = cmd.center
-	obj.Radius = cmd.radius
-	obj.Color = cmd.color
-	obj.Filled = true
-	obj.Thickness = 0
+	setProp(obj, "Position", cmd.center)
+	setProp(obj, "Radius", cmd.radius)
+	setProp(obj, "Color", cmd.color)
+	setProp(obj, "Filled", true)
+	setProp(obj, "Thickness", 0)
 	setProp(obj, "NumSides", 30)
 	setProp(obj, "ZIndex", z)
-	obj.Visible = true
+	setProp(obj, "Visible", true)
 end
 
 function Renderer._renderText(self, idx, z, cmd, clip)
 	local obj = getOrCreate(self.Text, "Text", idx)
-	if not cmd.p0 or not cmd.text then obj.Visible = false; return end
+	if not obj then return end
+	if not cmd.p0 or not cmd.text then setProp(obj, "Visible", false); return end
 
-	obj.Position = cmd.p0
-	obj.Text = cmd.text
-	obj.Color = cmd.color
-	obj.Size = cmd.textSize or 14
-	obj.Font = Renderer._fontToNumber(cmd.font)
-	obj.Center = false
-	obj.Outline = false
+	setProp(obj, "Position", cmd.p0)
+	setProp(obj, "Text", cmd.text)
+	setProp(obj, "Color", cmd.color)
+	setProp(obj, "Size", cmd.textSize or 14)
+	setProp(obj, "Font", Renderer._fontToNumber(cmd.font))
+	setProp(obj, "Center", false)
+	setProp(obj, "Outline", false)
 	setProp(obj, "ZIndex", z)
-	obj.Visible = true
+	setProp(obj, "Visible", true)
 end
 
 -- ============================================================

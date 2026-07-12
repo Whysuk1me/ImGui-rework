@@ -745,52 +745,32 @@ end
 -- используем TextBounds реального Drawing-объекта.
 -- ============================================================
 
-local FONT_SIMPLE = {
-	[Enum.Font.Code] = 3,
-	[Enum.Font.Gotham] = 0,
-	[Enum.Font.GothamBold] = 0,
-	[Enum.Font.GothamMedium] = 0,
-	[Enum.Font.GothamBlack] = 0,
-	[Enum.Font.Arial] = 0,
-	[Enum.Font.ArialBold] = 0,
-	[Enum.Font.UI] = 0,
-	[Enum.Font.Plex] = 2,
-	[Enum.Font.RobotoMono] = 3,
-	[Enum.Font.Code] = 3,
-	[Enum.Font.CodeBold] = 3,
-	[Enum.Font.Highway] = 1,
-	[Enum.Font.Cartoon] = 1,
-	[Enum.Font.Legacy] = 1,
-	[Enum.Font.SourceSans] = 2,
-	[Enum.Font.SourceSansBold] = 2,
-	[Enum.Font.SourceSansLight] = 2,
-	[Enum.Font.SourceSansPro] = 2,
-	[Enum.Font.Nunito] = 0,
-	[Enum.Font.Montserrat] = 0,
-	[Enum.Font.MontserratBold] = 0,
-	[Enum.Font.Baloo] = 0,
-	[Enum.Font.Bangers] = 1,
-	[Enum.Font.Creepster] = 1,
-	[Enum.Font.DenkOne] = 1,
-	[Enum.Font.Fondamento] = 2,
-	[Enum.Font.FredokaOne] = 0,
-	[Enum.Font.Jura] = 0,
-	[Enum.Font.Kalam] = 2,
-	[Enum.Font.LuckiestGuy] = 1,
-	[Enum.Font.Merriweather] = 2,
-	[Enum.Font.Michroma] = 0,
-	[Enum.Font.Oswald] = 2,
-	[Enum.Font.PatrickHand] = 1,
-	[Enum.Font.PermanentMarker] = 1,
-	[Enum.Font.Spectral] = 2,
-	[Enum.Font.TitilliumWeb] = 2,
-	[Enum.Font.ZillaSlab] = 2,
-	[Enum.Font.Roboto] = 0,
-	[Enum.Font.RobotoBold] = 0,
-	[Enum.Font.RobotoLight] = 0,
-	[Enum.Font.RobotoMedium] = 0,
-	[Enum.Font.RobotoSlab] = 2,
-}
+local FONT_SIMPLE = {}
+
+do
+	local MAP = {
+		{ "Code", 3 }, { "CodeBold", 3 },
+		{ "Gotham", 0 }, { "GothamBold", 0 }, { "GothamMedium", 0 }, { "GothamBlack", 0 },
+		{ "Arial", 0 }, { "ArialBold", 0 }, { "UI", 0 },
+		{ "Plex", 2 }, { "RobotoMono", 3 }, { "SourceSans", 2 },
+		{ "SourceSansBold", 2 }, { "SourceSansLight", 2 }, { "SourceSansPro", 2 },
+		{ "Highway", 1 }, { "Cartoon", 1 }, { "Legacy", 1 },
+		{ "Bangers", 1 }, { "Creepster", 1 }, { "DenkOne", 1 },
+		{ "PatrickHand", 1 }, { "PermanentMarker", 1 }, { "LuckiestGuy", 1 },
+		{ "Fondamento", 2 }, { "Kalam", 2 }, { "Merriweather", 2 },
+		{ "Spectral", 2 }, { "TitilliumWeb", 2 }, { "ZillaSlab", 2 },
+		{ "Nunito", 0 }, { "Montserrat", 0 }, { "MontserratBold", 0 },
+		{ "Baloo", 0 }, { "FredokaOne", 0 }, { "Jura", 0 }, { "Michroma", 0 },
+		{ "Oswald", 2 }, { "Roboto", 0 }, { "RobotoBold", 0 },
+		{ "RobotoLight", 0 }, { "RobotoMedium", 0 }, { "RobotoSlab", 2 },
+	}
+	for _, entry in ipairs(MAP) do
+		local ok, font = pcall(function() return Enum.Font[entry[1]] end)
+		if ok and font then
+			FONT_SIMPLE[font] = entry[2]
+		end
+	end
+end
 
 -- Скрытый объект для замера текста (создаётся один раз)
 local _textMeasurer = nil

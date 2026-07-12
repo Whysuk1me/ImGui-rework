@@ -201,13 +201,13 @@ function Window.Begin(drawList: DrawList.DrawList, style: Style.ImGuiStyle, inpu
 	end
 
 	-- Рисуем окно (фон + title + borders)
-	Window._DrawWindow(drawList, style, w)
+	Window._DrawWindow(drawList, style, w, input.mousePos)
 
 	w.appearing = false
 	return w
 end
 
-function Window._DrawWindow(drawList: DrawList.DrawList, style: Style.ImGuiStyle, w: Window)
+function Window._DrawWindow(drawList, style, w, mousePos)
 	local col = style.Colors
 	local round = style.WindowRounding
 	local border = style.WindowBorderSize
@@ -215,37 +215,38 @@ function Window._DrawWindow(drawList: DrawList.DrawList, style: Style.ImGuiStyle
 	local p0 = w.pos
 	local p1 = Vector2_new(w.pos.X + w.size.X, w.pos.Y + w.size.Y)
 
-	-- Фон
+	-- Фон окна
 	drawList:AddRectFilled(p0, p1, col.WindowBg, round)
 
-	-- Title bar
+	-- Title bar (отдельный фон)
+	local titleH = 24
 	local titleP0 = p0
-	local titleP1 = Vector2_new(p1.X, p0.Y + 24)
+	local titleP1 = Vector2_new(p1.X, p0.Y + titleH)
 	drawList:AddRectFilled(titleP0, titleP1, w.focused and col.TitleBgActive or col.TitleBg, round)
 
-	-- Border
+	-- Border (обводка всего окна)
 	if border > 0 then
 		drawList:AddRect(p0, p1, col.Border, round, border)
 	end
 
 	-- Title text
 	drawList:AddText(
-		Vector2_new(p0.X + style.WindowPadding.X, p0.Y + (24 - 14) / 2),
+		Vector2_new(p0.X + style.WindowPadding.X, p0.Y + (titleH - 14) / 2),
 		col.Text,
 		w.name,
 		Enum.Font.Code,
 		14
 	)
 
-	-- Resize grip (визуальная подсказка)
+	-- Resize grip (треугольник в правом нижнем углу)
 	if not w.flags.NoResize and not w.collapsed then
-		local gripColor = Util.RectContains(w._resizeGripRect, Vector2_new(0, 0)) and col.ResizeGripHovered or col.ResizeGrip
-		-- Маленький треугольник в углу
+		local gripHovered = mousePos and Util.RectContains(w._resizeGripRect, mousePos)
+		local gripColor = gripHovered and col.ResizeGripHovered or col.ResizeGrip
 		local gx, gy = p1.X, p1.Y
 		drawList:AddTriangleFilled(
-			Vector2_new(gx - 12, gy),
+			Vector2_new(gx - 14, gy),
 			Vector2_new(gx, gy),
-			Vector2_new(gx, gy - 12),
+			Vector2_new(gx, gy - 14),
 			gripColor
 		)
 	end

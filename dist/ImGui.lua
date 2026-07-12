@@ -1419,9 +1419,7 @@ function Window.Begin(drawList: DrawList.DrawList, style: Style.ImGuiStyle, inpu
 	w.flags = (opt and opt.flags) or {}
 	w.appearing = (w.appearing == true)
 
-	-- Если окно уже коллапсировано, всё равно рисуем title bar
-
-	-- Принудительный размер если есть в опциях
+	-- Принудительный размер/позиция если есть в опциях (только первый кадр)
 	if opt and opt.size and w.appearing then
 		w.size = opt.size
 	end
@@ -1433,31 +1431,17 @@ function Window.Begin(drawList: DrawList.DrawList, style: Style.ImGuiStyle, inpu
 	if w.size.X < style.WindowMinSize.X then w.size = Vector2_new(style.WindowMinSize.X, w.size.Y) end
 	if w.size.Y < style.WindowMinSize.Y then w.size = Vector2_new(w.size.X, style.WindowMinSize.Y) end
 
-	-- Title bar rect
+	-- Сначала обрабатываем ввод (drag/resize может изменить w.pos и w.size),
+	-- ПОТОМ вычисляем rect'ы и layout на основе актуальной позиции.
+
 	local titleHeight = 24
-	w._titleBarRect = Util.Rect(w.pos.X, w.pos.Y, w.size.X, titleHeight)
-
-	-- Resize grip rect (правый нижний угол, 12x12)
-	w._resizeGripRect = Util.Rect(w.pos.X + w.size.X - 12, w.pos.Y + w.size.Y - 12, 12, 12)
-
-	-- Client rect (внутренняя область окна)
 	local pad = style.WindowPadding
-	local clientX = w.pos.X + pad.X
-	local clientY = w.pos.Y + titleHeight + pad.Y
-	local clientW = w.size.X - pad.X * 2
-	local clientH = w.size.Y - titleHeight - pad.Y * 2
-	if clientW < 0 then clientW = 0 end
-	if clientH < 0 then clientH = 0 end
-	w._clientRect = Util.Rect(clientX, clientY, clientW, clientH)
 
-	-- Layout reset
-	w.layout:Reset(Vector2_new(clientX, clientY))
+	-- Input handling: focus on click (нужен текущий titleBarRect для hit-test)
+	local curTitleRect = Util.Rect(w.pos.X, w.pos.Y, w.size.X, titleHeight)
+	local curResizeRect = Util.Rect(w.pos.X + w.size.X - 12, w.pos.Y + w.size.Y - 12, 12, 12)
 
-	-- Push clip rect
-	drawList:PushClipRect(w._clientRect)
-
-	-- Input handling: focus on click
-	if input.mouseClicked and Util.RectContains(w._titleBarRect, input.mousePos) then
+	if input.mouseClicked and Util.RectContains(curTitleRect, input.mousePos) then
 		w.focused = true
 		w.focusOrder = _focusCounter + 1
 		_focusCounter = _focusCounter + 1
@@ -1465,7 +1449,7 @@ function Window.Begin(drawList: DrawList.DrawList, style: Style.ImGuiStyle, inpu
 
 	-- Drag handling
 	if not w.flags.NoMove then
-		if not w._dragging and input.mouseClicked and Util.RectContains(w._titleBarRect, input.mousePos) then
+		if not w._dragging and input.mouseClicked and Util.RectContains(curTitleRect, input.mousePos) then
 			w._dragging = true
 			w._dragOffset = Vector2_new(input.mousePos.X - w.pos.X, input.mousePos.Y - w.pos.Y)
 		end
@@ -1479,7 +1463,7 @@ function Window.Begin(drawList: DrawList.DrawList, style: Style.ImGuiStyle, inpu
 
 	-- Resize handling
 	if not w.flags.NoResize and not w.collapsed then
-		if not w._resizing and input.mouseClicked and Util.RectContains(w._resizeGripRect, input.mousePos) then
+		if not w._resizing and input.mouseClicked and Util.RectContains(curResizeRect, input.mousePos) then
 			w._resizing = true
 			w._resizeStartSize = w.size
 			w._resizeStartMouse = input.mousePos
@@ -1495,6 +1479,22 @@ function Window.Begin(drawList: DrawList.DrawList, style: Style.ImGuiStyle, inpu
 			end
 		end
 	end
+
+	-- Теперь вычисляем rect'ы и layout на основе актуального w.pos / w.size
+	w._titleBarRect = Util.Rect(w.pos.X, w.pos.Y, w.size.X, titleHeight)
+	w._resizeGripRect = Util.Rect(w.pos.X + w.size.X - 12, w.pos.Y + w.size.Y - 12, 12, 12)
+
+	local clientX = w.pos.X + pad.X
+	local clientY = w.pos.Y + titleHeight + pad.Y
+	local clientW = w.size.X - pad.X * 2
+	local clientH = w.size.Y - titleHeight - pad.Y * 2
+	if clientW < 0 then clientW = 0 end
+	if clientH < 0 then clientH = 0 end
+	w._clientRect = Util.Rect(clientX, clientY, clientW, clientH)
+
+	-- Layout reset — layout и drawList используют ОДНУ И ТУ ЖЕ позицию
+	w.layout:Reset(Vector2_new(clientX, clientY))
+	drawList:PushClipRect(w._clientRect)
 
 	-- Рисуем окно (фон + title + borders)
 	Window._DrawWindow(drawList, style, w, input.mousePos)

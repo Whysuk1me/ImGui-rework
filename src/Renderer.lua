@@ -297,24 +297,29 @@ function Renderer._renderText(self, idx, z, cmd, clip)
 end
 
 -- ============================================================
--- Конвертация Enum.Font → число для Drawing API
+-- Конвертация Enum.Font → число для Drawing API (0–3).
+-- Drawing API поддерживает ТОЛЬКО 4 шрифта:
+--   0 = UI (sans-serif), 1 = System (legacy), 2 = Plex (Source Sans), 3 = Monospace
 -- ============================================================
 
 local FONT_MAP = {}
 
 local FONT_NAMES = {
 	{ "UI", 0 }, { "System", 1 }, { "Plex", 2 }, { "Monospace", 3 },
-	{ "Arial", 4 }, { "ArialBold", 4 }, { "Highway", 5 },
-	{ "SourceSans", 6 }, { "SourceSansBold", 7 }, { "Code", 3 },
-	{ "Roboto", 6 }, { "RobotoMono", 3 }, { "Gotham", 6 },
-	{ "GothamMedium", 6 }, { "GothamBold", 7 }, { "GothamBlack", 7 },
-	{ "Montserrat", 6 }, { "MontserratBold", 7 }, { "Baloo", 6 },
-	{ "Bangers", 6 }, { "Creepster", 6 }, { "DenkOne", 6 },
-	{ "Fondamento", 6 }, { "FredokaOne", 6 }, { "Jura", 6 },
-	{ "Kalam", 6 }, { "LuckiestGuy", 6 }, { "Merriweather", 6 },
-	{ "Michroma", 6 }, { "Nunito", 6 }, { "Oswald", 6 },
-	{ "PatrickHand", 6 }, { "PermanentMarker", 6 },
-	{ "Spectral", 6 }, { "TitilliumWeb", 6 }, { "ZillaSlab", 6 },
+	{ "Code", 3 }, { "CodeBold", 3 },
+	{ "Arial", 0 }, { "ArialBold", 0 },
+	{ "Gotham", 0 }, { "GothamBold", 0 }, { "GothamMedium", 0 }, { "GothamBlack", 0 },
+	{ "Roboto", 0 }, { "RobotoBold", 0 }, { "RobotoLight", 0 }, { "RobotoMedium", 0 },
+	{ "SourceSans", 2 }, { "SourceSansBold", 2 }, { "SourceSansLight", 2 }, { "SourceSansPro", 2 },
+	{ "RobotoMono", 3 }, { "RobotoSlab", 2 },
+	{ "Highway", 1 }, { "Legacy", 1 }, { "Cartoon", 1 },
+	{ "Bangers", 1 }, { "Creepster", 1 }, { "DenkOne", 1 },
+	{ "PatrickHand", 1 }, { "PermanentMarker", 1 }, { "LuckiestGuy", 1 },
+	{ "Fondamento", 2 }, { "Kalam", 2 }, { "Merriweather", 2 },
+	{ "Spectral", 2 }, { "TitilliumWeb", 2 }, { "ZillaSlab", 2 },
+	{ "Nunito", 0 }, { "Montserrat", 0 }, { "MontserratBold", 0 },
+	{ "Baloo", 0 }, { "FredokaOne", 0 }, { "Jura", 0 }, { "Michroma", 0 },
+	{ "Oswald", 2 },
 }
 
 local function buildFontMap()
@@ -331,12 +336,15 @@ end
 buildFontMap()
 
 function Renderer._fontToNumber(font)
-	if type(font) == "number" then return font end
+	if type(font) == "number" then
+		return math.clamp(font, 0, 3)
+	end
 	if not font then return 0 end
 	local n = FONT_MAP[font]
 	if n then return n end
+	-- Fallback: пробуем .Value, но clamp к 0-3
 	local ok, v = pcall(function() return font.Value end)
-	if ok and type(v) == "number" then return v end
+	if ok and type(v) == "number" then return math.clamp(v, 0, 3) end
 	return 0
 end
 

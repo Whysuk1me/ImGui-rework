@@ -740,18 +740,89 @@ function DrawList.AddText(self: DrawList, pos: Vector2, color: Color3, text: str
 end
 
 -- ============================================================
--- Замер текста. Используем TextService.
+-- Замер текста. Используем скрытый Drawing.Text для точности.
+-- TextService:GetTextSize() НЕ совпадает с Drawing API —
+-- используем TextBounds реального Drawing-объекта.
 -- ============================================================
 
-local TextService = game:GetService("TextService")
+local FONT_SIMPLE = {
+	[Enum.Font.Code] = 3,
+	[Enum.Font.Gotham] = 0,
+	[Enum.Font.GothamBold] = 0,
+	[Enum.Font.GothamMedium] = 0,
+	[Enum.Font.GothamBlack] = 0,
+	[Enum.Font.Arial] = 0,
+	[Enum.Font.ArialBold] = 0,
+	[Enum.Font.UI] = 0,
+	[Enum.Font.Plex] = 2,
+	[Enum.Font.RobotoMono] = 3,
+	[Enum.Font.Code] = 3,
+	[Enum.Font.CodeBold] = 3,
+	[Enum.Font.Highway] = 1,
+	[Enum.Font.Cartoon] = 1,
+	[Enum.Font.Legacy] = 1,
+	[Enum.Font.SourceSans] = 2,
+	[Enum.Font.SourceSansBold] = 2,
+	[Enum.Font.SourceSansLight] = 2,
+	[Enum.Font.SourceSansPro] = 2,
+	[Enum.Font.Nunito] = 0,
+	[Enum.Font.Montserrat] = 0,
+	[Enum.Font.MontserratBold] = 0,
+	[Enum.Font.Baloo] = 0,
+	[Enum.Font.Bangers] = 1,
+	[Enum.Font.Creepster] = 1,
+	[Enum.Font.DenkOne] = 1,
+	[Enum.Font.Fondamento] = 2,
+	[Enum.Font.FredokaOne] = 0,
+	[Enum.Font.Jura] = 0,
+	[Enum.Font.Kalam] = 2,
+	[Enum.Font.LuckiestGuy] = 1,
+	[Enum.Font.Merriweather] = 2,
+	[Enum.Font.Michroma] = 0,
+	[Enum.Font.Oswald] = 2,
+	[Enum.Font.PatrickHand] = 1,
+	[Enum.Font.PermanentMarker] = 1,
+	[Enum.Font.Spectral] = 2,
+	[Enum.Font.TitilliumWeb] = 2,
+	[Enum.Font.ZillaSlab] = 2,
+	[Enum.Font.Roboto] = 0,
+	[Enum.Font.RobotoBold] = 0,
+	[Enum.Font.RobotoLight] = 0,
+	[Enum.Font.RobotoMedium] = 0,
+	[Enum.Font.RobotoSlab] = 2,
+}
+
+-- Скрытый объект для замера текста (создаётся один раз)
+local _textMeasurer = nil
+
+local function ensureMeasurer()
+	if _textMeasurer then return end
+	local ok, obj = pcall(Drawing.new, "Text")
+	if ok and type(obj) == "table" then
+		pcall(function() obj.Visible = false end)
+		_textMeasurer = obj
+	end
+end
 
 local function measureText(text: string, font: Enum.Font, size: number): Vector2
+	ensureMeasurer()
+	if _textMeasurer then
+		local num = FONT_SIMPLE[font]
+		if not num then num = 0 end
+		pcall(function()
+			_textMeasurer.Text = text
+			_textMeasurer.Size = size
+			_textMeasurer.Font = num
+		end)
+		local b = _textMeasurer.TextBounds
+		return Vector2_new(math.ceil(b.X), math.ceil(b.Y))
+	end
+	-- Fallback — TextService (если Drawing недоступен)
 	local ok, bounds = pcall(function()
-		return TextService:GetTextSize(text, size, font, Vector2.new(math.huge, math.huge))
+		return game:GetService("TextService"):GetTextSize(text, size, font, Vector2.new(math.huge, math.huge))
 	end)
 	if ok and bounds then return bounds end
-	-- Fallback — грубая оценка
-	return Vector2_new(#text * size * 0.55, size)
+	return Vector2_new(#text * size * 0.6, size)
 end
 
 -- Публичный хелпер
@@ -1066,24 +1137,29 @@ function Renderer._renderText(self, idx, z, cmd, clip)
 end
 
 -- ============================================================
--- Конвертация Enum.Font → число для Drawing API
+-- Конвертация Enum.Font → число для Drawing API (0–3).
+-- Drawing API поддерживает ТОЛЬКО 4 шрифта:
+--   0 = UI (sans-serif), 1 = System (legacy), 2 = Plex (Source Sans), 3 = Monospace
 -- ============================================================
 
 local FONT_MAP = {}
 
 local FONT_NAMES = {
 	{ "UI", 0 }, { "System", 1 }, { "Plex", 2 }, { "Monospace", 3 },
-	{ "Arial", 4 }, { "ArialBold", 4 }, { "Highway", 5 },
-	{ "SourceSans", 6 }, { "SourceSansBold", 7 }, { "Code", 3 },
-	{ "Roboto", 6 }, { "RobotoMono", 3 }, { "Gotham", 6 },
-	{ "GothamMedium", 6 }, { "GothamBold", 7 }, { "GothamBlack", 7 },
-	{ "Montserrat", 6 }, { "MontserratBold", 7 }, { "Baloo", 6 },
-	{ "Bangers", 6 }, { "Creepster", 6 }, { "DenkOne", 6 },
-	{ "Fondamento", 6 }, { "FredokaOne", 6 }, { "Jura", 6 },
-	{ "Kalam", 6 }, { "LuckiestGuy", 6 }, { "Merriweather", 6 },
-	{ "Michroma", 6 }, { "Nunito", 6 }, { "Oswald", 6 },
-	{ "PatrickHand", 6 }, { "PermanentMarker", 6 },
-	{ "Spectral", 6 }, { "TitilliumWeb", 6 }, { "ZillaSlab", 6 },
+	{ "Code", 3 }, { "CodeBold", 3 },
+	{ "Arial", 0 }, { "ArialBold", 0 },
+	{ "Gotham", 0 }, { "GothamBold", 0 }, { "GothamMedium", 0 }, { "GothamBlack", 0 },
+	{ "Roboto", 0 }, { "RobotoBold", 0 }, { "RobotoLight", 0 }, { "RobotoMedium", 0 },
+	{ "SourceSans", 2 }, { "SourceSansBold", 2 }, { "SourceSansLight", 2 }, { "SourceSansPro", 2 },
+	{ "RobotoMono", 3 }, { "RobotoSlab", 2 },
+	{ "Highway", 1 }, { "Legacy", 1 }, { "Cartoon", 1 },
+	{ "Bangers", 1 }, { "Creepster", 1 }, { "DenkOne", 1 },
+	{ "PatrickHand", 1 }, { "PermanentMarker", 1 }, { "LuckiestGuy", 1 },
+	{ "Fondamento", 2 }, { "Kalam", 2 }, { "Merriweather", 2 },
+	{ "Spectral", 2 }, { "TitilliumWeb", 2 }, { "ZillaSlab", 2 },
+	{ "Nunito", 0 }, { "Montserrat", 0 }, { "MontserratBold", 0 },
+	{ "Baloo", 0 }, { "FredokaOne", 0 }, { "Jura", 0 }, { "Michroma", 0 },
+	{ "Oswald", 2 },
 }
 
 local function buildFontMap()
@@ -1100,12 +1176,15 @@ end
 buildFontMap()
 
 function Renderer._fontToNumber(font)
-	if type(font) == "number" then return font end
+	if type(font) == "number" then
+		return math.clamp(font, 0, 3)
+	end
 	if not font then return 0 end
 	local n = FONT_MAP[font]
 	if n then return n end
+	-- Fallback: пробуем .Value, но clamp к 0-3
 	local ok, v = pcall(function() return font.Value end)
-	if ok and type(v) == "number" then return v end
+	if ok and type(v) == "number" then return math.clamp(v, 0, 3) end
 	return 0
 end
 
@@ -1736,13 +1815,8 @@ function Widgets.Button(label: string, size: Vector2?): boolean
 		drawList:AddRect(p0, p1, col.Border, style.FrameRounding, style.FrameBorderSize)
 	end
 
-	-- Текст по центру
-	local textSize = Vector2_new(0, 14)
-	local ok, TextService = pcall(function() return game:GetService("TextService") end)
-	if ok then
-		local bounds = TextService:GetTextSize(label, 14, Enum.Font.Code, Vector2_new(math.huge, math.huge))
-		textSize = bounds
-	end
+	-- Текст по центру (Drawing API measurement)
+	local textSize = DrawList.CalcTextSize(drawList, label, Enum.Font.Code, 14)
 
 	local textX = p0.X + (btnSize.X - textSize.X) * style.ButtonTextAlign.X
 	local textY = p0.Y + (btnSize.Y - textSize.Y) * style.ButtonTextAlign.Y
@@ -1764,13 +1838,8 @@ function Widgets.Text(s: string)
 	local style = c.style
 	local drawList = c.drawList
 
-	-- Замер текста
-	local textSize = Vector2_new(0, 14)
-	local ok, TextService = pcall(function() return game:GetService("TextService") end)
-	if ok then
-		local bounds = TextService:GetTextSize(s, 14, Enum.Font.Code, Vector2_new(math.huge, math.huge))
-		textSize = bounds
-	end
+	-- Замер текста (Drawing API measurement)
+	local textSize = DrawList.CalcTextSize(drawList, s, Enum.Font.Code, 14)
 
 	local pos = w.layout.cursor
 	drawList:AddText(pos, style.Colors.Text, s, Enum.Font.Code, 14)
@@ -1793,13 +1862,8 @@ function Widgets.Checkbox(label: string, value: { value: boolean }): boolean
 	local box = style.GrabMinSize
 	local boxSize = Vector2_new(box, box)
 
-	-- Замер текста для общей ширины
-	local textSize = Vector2_new(0, 14)
-	local ok, TextService = pcall(function() return game:GetService("TextService") end)
-	if ok then
-		local bounds = TextService:GetTextSize(label, 14, Enum.Font.Code, Vector2_new(math.huge, math.huge))
-		textSize = bounds
-	end
+	-- Замер текста (Drawing API measurement)
+	local textSize = DrawList.CalcTextSize(drawList, label, Enum.Font.Code, 14)
 
 	local totalW = box + style.ItemInnerSpacing.X + textSize.X
 	local totalH = math.max(box, textSize.Y)

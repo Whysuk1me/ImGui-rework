@@ -90,13 +90,8 @@ function Widgets.Button(label: string, size: Vector2?): boolean
 		drawList:AddRect(p0, p1, col.Border, style.FrameRounding, style.FrameBorderSize)
 	end
 
-	-- Текст по центру
-	local textSize = Vector2_new(0, 14)
-	local ok, TextService = pcall(function() return game:GetService("TextService") end)
-	if ok then
-		local bounds = TextService:GetTextSize(label, 14, Enum.Font.Code, Vector2_new(math.huge, math.huge))
-		textSize = bounds
-	end
+	-- Текст по центру (Drawing API measurement)
+	local textSize = DrawList.CalcTextSize(drawList, label, Enum.Font.Code, 14)
 
 	local textX = p0.X + (btnSize.X - textSize.X) * style.ButtonTextAlign.X
 	local textY = p0.Y + (btnSize.Y - textSize.Y) * style.ButtonTextAlign.Y
@@ -118,13 +113,8 @@ function Widgets.Text(s: string)
 	local style = c.style
 	local drawList = c.drawList
 
-	-- Замер текста
-	local textSize = Vector2_new(0, 14)
-	local ok, TextService = pcall(function() return game:GetService("TextService") end)
-	if ok then
-		local bounds = TextService:GetTextSize(s, 14, Enum.Font.Code, Vector2_new(math.huge, math.huge))
-		textSize = bounds
-	end
+	-- Замер текста (Drawing API measurement)
+	local textSize = DrawList.CalcTextSize(drawList, s, Enum.Font.Code, 14)
 
 	local pos = w.layout.cursor
 	drawList:AddText(pos, style.Colors.Text, s, Enum.Font.Code, 14)
@@ -147,13 +137,8 @@ function Widgets.Checkbox(label: string, value: { value: boolean }): boolean
 	local box = style.GrabMinSize
 	local boxSize = Vector2_new(box, box)
 
-	-- Замер текста для общей ширины
-	local textSize = Vector2_new(0, 14)
-	local ok, TextService = pcall(function() return game:GetService("TextService") end)
-	if ok then
-		local bounds = TextService:GetTextSize(label, 14, Enum.Font.Code, Vector2_new(math.huge, math.huge))
-		textSize = bounds
-	end
+	-- Замер текста (Drawing API measurement)
+	local textSize = DrawList.CalcTextSize(drawList, label, Enum.Font.Code, 14)
 
 	local totalW = box + style.ItemInnerSpacing.X + textSize.X
 	local totalH = math.max(box, textSize.Y)

@@ -170,18 +170,89 @@ function DrawList.AddText(self: DrawList, pos: Vector2, color: Color3, text: str
 end
 
 -- ============================================================
--- Замер текста. Используем TextService.
+-- Замер текста. Используем скрытый Drawing.Text для точности.
+-- TextService:GetTextSize() НЕ совпадает с Drawing API —
+-- используем TextBounds реального Drawing-объекта.
 -- ============================================================
 
-local TextService = game:GetService("TextService")
+local FONT_SIMPLE = {
+	[Enum.Font.Code] = 3,
+	[Enum.Font.Gotham] = 0,
+	[Enum.Font.GothamBold] = 0,
+	[Enum.Font.GothamMedium] = 0,
+	[Enum.Font.GothamBlack] = 0,
+	[Enum.Font.Arial] = 0,
+	[Enum.Font.ArialBold] = 0,
+	[Enum.Font.UI] = 0,
+	[Enum.Font.Plex] = 2,
+	[Enum.Font.RobotoMono] = 3,
+	[Enum.Font.Code] = 3,
+	[Enum.Font.CodeBold] = 3,
+	[Enum.Font.Highway] = 1,
+	[Enum.Font.Cartoon] = 1,
+	[Enum.Font.Legacy] = 1,
+	[Enum.Font.SourceSans] = 2,
+	[Enum.Font.SourceSansBold] = 2,
+	[Enum.Font.SourceSansLight] = 2,
+	[Enum.Font.SourceSansPro] = 2,
+	[Enum.Font.Nunito] = 0,
+	[Enum.Font.Montserrat] = 0,
+	[Enum.Font.MontserratBold] = 0,
+	[Enum.Font.Baloo] = 0,
+	[Enum.Font.Bangers] = 1,
+	[Enum.Font.Creepster] = 1,
+	[Enum.Font.DenkOne] = 1,
+	[Enum.Font.Fondamento] = 2,
+	[Enum.Font.FredokaOne] = 0,
+	[Enum.Font.Jura] = 0,
+	[Enum.Font.Kalam] = 2,
+	[Enum.Font.LuckiestGuy] = 1,
+	[Enum.Font.Merriweather] = 2,
+	[Enum.Font.Michroma] = 0,
+	[Enum.Font.Oswald] = 2,
+	[Enum.Font.PatrickHand] = 1,
+	[Enum.Font.PermanentMarker] = 1,
+	[Enum.Font.Spectral] = 2,
+	[Enum.Font.TitilliumWeb] = 2,
+	[Enum.Font.ZillaSlab] = 2,
+	[Enum.Font.Roboto] = 0,
+	[Enum.Font.RobotoBold] = 0,
+	[Enum.Font.RobotoLight] = 0,
+	[Enum.Font.RobotoMedium] = 0,
+	[Enum.Font.RobotoSlab] = 2,
+}
+
+-- Скрытый объект для замера текста (создаётся один раз)
+local _textMeasurer = nil
+
+local function ensureMeasurer()
+	if _textMeasurer then return end
+	local ok, obj = pcall(Drawing.new, "Text")
+	if ok and type(obj) == "table" then
+		pcall(function() obj.Visible = false end)
+		_textMeasurer = obj
+	end
+end
 
 local function measureText(text: string, font: Enum.Font, size: number): Vector2
+	ensureMeasurer()
+	if _textMeasurer then
+		local num = FONT_SIMPLE[font]
+		if not num then num = 0 end
+		pcall(function()
+			_textMeasurer.Text = text
+			_textMeasurer.Size = size
+			_textMeasurer.Font = num
+		end)
+		local b = _textMeasurer.TextBounds
+		return Vector2_new(math.ceil(b.X), math.ceil(b.Y))
+	end
+	-- Fallback — TextService (если Drawing недоступен)
 	local ok, bounds = pcall(function()
-		return TextService:GetTextSize(text, size, font, Vector2.new(math.huge, math.huge))
+		return game:GetService("TextService"):GetTextSize(text, size, font, Vector2.new(math.huge, math.huge))
 	end)
 	if ok and bounds then return bounds end
-	-- Fallback — грубая оценка
-	return Vector2_new(#text * size * 0.55, size)
+	return Vector2_new(#text * size * 0.6, size)
 end
 
 -- Публичный хелпер

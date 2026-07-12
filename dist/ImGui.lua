@@ -1033,54 +1033,70 @@ end
 -- Конвертация Enum.Font в число, которое ждёт Drawing API.
 -- Drawing API Font: 0=UI, 1=System, 2=Plex, 3=Monospace, 4=Arial, 5=Highway,
 -- 6=SourceSans, 7=SourceSansBold
-local FONT_MAP = {
-	[Enum.Font.UI]             = 0,
-	[Enum.Font.System]         = 1,
-	[Enum.Font.Plex]           = 2,
-	[Enum.Font.Monospace]      = 3,
-	[Enum.Font.Arial]          = 4,
-	[Enum.Font.ArialBold]      = 4,
-	[Enum.Font.Highway]        = 5,
-	[Enum.Font.SourceSans]     = 6,
-	[Enum.Font.SourceSansBold] = 7,
-	[Enum.Font.Code]           = 3, -- Monospace-like
-	[Enum.Font.Roboto]        = 6,
-	[Enum.Font.RobotoMono]    = 3,
-	[Enum.Font.Gotham]        = 6,
-	[Enum.Font.GothamMedium]  = 6,
-	[Enum.Font.GothamBold]    = 7,
-	[Enum.Font.GothamBlack]   = 7,
-	[Enum.Font.Montserrat]    = 6,
-	[Enum.Font.MontserratBold]= 7,
-	[Enum.Font.Baloo]         = 6,
-	[Enum.Font.BalooBold]      = 7,
-	[Enum.Font.Bangers]       = 6,
-	[Enum.Font.Creepster]     = 6,
-	[Enum.Font.DenkOne]       = 6,
-	[Enum.Font.Fondamento]    = 6,
-	[Enum.Font.FredokaOne]    = 6,
-	[Enum.Font.GranumSans]    = 6,
-	[Enum.Font.Jura]          = 6,
-	[Enum.Font.JuraBold]      = 7,
-	[Enum.Font.Kalam]         = 6,
-	[Enum.Font.LuckiestGuy]  = 6,
-	[Enum.Font.Merriweather]  = 6,
-	[Enum.Font.Michroma]     = 6,
-	[Enum.Font.Nunito]       = 6,
-	[Enum.Font.Oswald]       = 6,
-	[Enum.Font.OswaldBold]   = 7,
-	[Enum.Font.PatrickHand]  = 6,
-	[Enum.Font.PermaSignal]  = 6,
-	[Enum.Font.PermanentMarker] = 6,
-	[Enum.Font.RobotoCondensed] = 6,
-	[Enum.Font.RobotoCondensedBold] = 7,
-	[Enum.Font.Spectral]     = 6,
-	[Enum.Font.SpectralBold] = 7,
-	[Enum.Font.TitilliumWeb]  = 6,
-	[Enum.Font.TitilliumWebBold] =  Enum.Font.TitilliumWebBold and 7 or 7,
-	[Enum.Font.ZillaSlab]    = 6,
-	[Enum.Font.ZillaSlabBold] = 7,
-}
+--
+-- Важно: не все Enum.Font значения существуют во всех версиях Roblox/эксплойтов,
+-- поэтому строим карту defensively через pcall.
+local FONT_MAP: { [any]: number } = {}
+
+local function tryAddFont(enumValue: any, num: number)
+	local ok = pcall(function()
+		-- Проверяем, что enumValue действительно валидный EnumItem
+		local _ = enumValue.Name
+		_ = enumValue.Value
+	end)
+	if ok then
+		FONT_MAP[enumValue] = num
+	end
+end
+
+local function buildFontMap()
+	tryAddFont(Enum.Font.UI, 0)
+	tryAddFont(Enum.Font.System, 1)
+	tryAddFont(Enum.Font.Plex, 2)
+	tryAddFont(Enum.Font.Monospace, 3)
+	tryAddFont(Enum.Font.Arial, 4)
+	tryAddFont(Enum.Font.ArialBold, 4)
+	tryAddFont(Enum.Font.Highway, 5)
+	tryAddFont(Enum.Font.SourceSans, 6)
+	tryAddFont(Enum.Font.SourceSansBold, 7)
+	tryAddFont(Enum.Font.Code, 3)
+	tryAddFont(Enum.Font.Roboto, 6)
+	tryAddFont(Enum.Font.RobotoMono, 3)
+	tryAddFont(Enum.Font.Gotham, 6)
+	tryAddFont(Enum.Font.GothamMedium, 6)
+	tryAddFont(Enum.Font.GothamBold, 7)
+	tryAddFont(Enum.Font.GothamBlack, 7)
+	tryAddFont(Enum.Font.Montserrat, 6)
+	tryAddFont(Enum.Font.MontserratBold, 7)
+	tryAddFont(Enum.Font.Baloo, 6)
+	tryAddFont(Enum.Font.BalooBold, 7)
+	tryAddFont(Enum.Font.Bangers, 6)
+	tryAddFont(Enum.Font.Creepster, 6)
+	tryAddFont(Enum.Font.DenkOne, 6)
+	tryAddFont(Enum.Font.Fondamento, 6)
+	tryAddFont(Enum.Font.FredokaOne, 6)
+	tryAddFont(Enum.Font.Jura, 6)
+	tryAddFont(Enum.Font.JuraBold, 7)
+	tryAddFont(Enum.Font.Kalam, 6)
+	tryAddFont(Enum.Font.LuckiestGuy, 6)
+	tryAddFont(Enum.Font.Merriweather, 6)
+	tryAddFont(Enum.Font.Michroma, 6)
+	tryAddFont(Enum.Font.Nunito, 6)
+	tryAddFont(Enum.Font.Oswald, 6)
+	tryAddFont(Enum.Font.OswaldBold, 7)
+	tryAddFont(Enum.Font.PatrickHand, 6)
+	tryAddFont(Enum.Font.PermanentMarker, 6)
+	tryAddFont(Enum.Font.RobotoCondensed, 6)
+	tryAddFont(Enum.Font.RobotoCondensedBold, 7)
+	tryAddFont(Enum.Font.Spectral, 6)
+	tryAddFont(Enum.Font.SpectralBold, 7)
+	tryAddFont(Enum.Font.TitilliumWeb, 6)
+	tryAddFont(Enum.Font.TitilliumWebBold, 7)
+	tryAddFont(Enum.Font.ZillaSlab, 6)
+	tryAddFont(Enum.Font.ZillaSlabBold, 7)
+end
+
+buildFontMap()
 
 function Renderer._fontToNumber(font: any): number
 	if type(font) == "number" then return font end
@@ -1088,10 +1104,10 @@ function Renderer._fontToNumber(font: any): number
 	local n = FONT_MAP[font]
 	if n then return n end
 	-- Fallback: EnumItem.Value
-	if typeof(font) == "EnumItem" then
-		local v = font.Value
-		if type(v) == "number" then return v end
-	end
+	local ok, v = pcall(function()
+		return font.Value
+	end)
+	if ok and type(v) == "number" then return v end
 	return 0
 end
 

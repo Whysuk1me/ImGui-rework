@@ -63,15 +63,9 @@ function Core.BeginFrame(self: Context)
 	DrawList.Clear(self.drawList)
 end
 
-function Core.EndFrame(self: Context)
-	-- Отсортировать окна по focusOrder перед рендером (для z-order).
-	-- Окна с большим focusOrder рисуются последними (поверх).
-	-- Однако DrawList уже накапливает команды в порядке Begin() вызовов —
-	-- что соответствует z-order'у, если юзер вызывает Begin в нужном порядке.
-	-- Для простоты MVP: порядок рисования = порядок Begin в кадре.
-	-- Фокус меняет только визуальное состояние (title bar color).
-
+function Core.EndFrame(self)
 	Renderer.Render(self.renderer, self.drawList)
+	Input.EndFrame(self.input)
 
 	self.framed = false
 	self.currentWindow = nil

@@ -410,8 +410,23 @@ define("Input", function(require)
 -- инкрементально аккумулируются.
 
 local UserInputService = game:GetService("UserInputService")
+local GuiService = game:GetService("GuiService")
 
 local Input = {}
+
+-- GUI inset компенсация. GetMouseLocation() возвращает координаты с учётом
+-- topbar inset (обычно 36px сверху). Drawing API использует экранные
+-- координаты. Вычитаем inset, чтобы hit-test совпадал с рендером.
+local function getInset()
+	local ok, inset = pcall(function() return GuiService:GetGuiInset() end)
+	if ok and typeof(inset) == "Vector2" then return inset end
+	return Vector2.new(0, 0)
+end
+
+local function toScreenPos(p)
+	local inset = getInset()
+	return Vector2.new(p.X, p.Y - inset.Y)
+end
 
 export type InputState = {
 	mousePos: Vector2,
@@ -461,23 +476,22 @@ function Input.new(): InputState
 	}
 end
 
-function Input.Init(self: InputState)
+function Input.Init(self)
 	-- Инициализация позиции мыши
 	local ok, mouseLoc = pcall(function()
 		return UserInputService:GetMouseLocation()
 	end)
 	if ok and typeof(mouseLoc) == "Vector2" then
-		self.mousePos = mouseLoc
-		self.mousePosPrev = mouseLoc
+		self.mousePos = toScreenPos(mouseLoc)
+		self.mousePosPrev = self.mousePos
 	end
 
 	-- Подписки
 	local conn
 
 	conn = UserInputService.InputChanged:Connect(function(input, gameProcessed)
-		if gameProcessed then return end
 		if input.UserInputType == Enum.UserInputType.MouseMovement then
-			self.mousePos = Vector2.new(input.Position.X, input.Position.Y)
+			self.mousePos = toScreenPos(input.Position)
 		elseif input.UserInputType == Enum.UserInputType.MouseWheel then
 			self.scrollDelta = (input.Position.Z or 0)
 		end
@@ -485,8 +499,6 @@ function Input.Init(self: InputState)
 	table.insert(self._connections, conn)
 
 	conn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
-		if gameProcessed then return end
-
 		if input.UserInputType == Enum.UserInputType.MouseButton1
 			or input.UserInputType == Enum.UserInputType.MouseButton2
 			or input.UserInputType == Enum.UserInputType.MouseButton3 then
@@ -506,7 +518,6 @@ function Input.Init(self: InputState)
 	table.insert(self._connections, conn)
 
 	conn = UserInputService.InputEnded:Connect(function(input, gameProcessed)
-		if gameProcessed then return end
 		if input.UserInputType == Enum.UserInputType.MouseButton1
 			or input.UserInputType == Enum.UserInputType.MouseButton2
 			or input.UserInputType == Enum.UserInputType.MouseButton3 then
@@ -519,9 +530,14 @@ function Input.Init(self: InputState)
 	table.insert(self._connections, conn)
 end
 
--- Сбросить edge-флаги в начале кадра.
+-- BeginFrame: НЕ сбрасываем edge-флаги! Они должны дожить до виджетов.
+-- Сброс происходит в EndFrame, после того как все виджеты отработали.
 function Input.BeginFrame(self: InputState)
 	self.mousePosPrev = self.mousePos
+end
+
+-- EndFrame: сброс edge-флагов ПОСЛЕ того, как виджеты их прочитали.
+function Input.EndFrame(self: InputState)
 	self.mouseClicked = false
 	self.mouseReleased = false
 	self.mouseDoubleClicked = false
@@ -1605,15 +1621,9 @@ function Core.BeginFrame(self: Context)
 	DrawList.Clear(self.drawList)
 end
 
-function Core.EndFrame(self: Context)
-	-- Отсортировать окна по focusOrder перед рендером (для z-order).
-	-- Окна с большим focusOrder рисуются последними (поверх).
-	-- Однако DrawList уже накапливает команды в порядке Begin() вызовов —
-	-- что соответствует z-order'у, если юзер вызывает Begin в нужном порядке.
-	-- Для простоты MVP: порядок рисования = порядок Begin в кадре.
-	-- Фокус меняет только визуальное состояние (title bar color).
-
+function Core.EndFrame(self)
 	Renderer.Render(self.renderer, self.drawList)
+	Input.EndFrame(self.input)
 
 	self.framed = false
 	self.currentWindow = nil

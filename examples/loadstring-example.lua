@@ -1,22 +1,71 @@
 -- loadstring-example.lua — пример загрузки ImGui-rework через raw GitHub URL.
--- Работает в любом эксплойте, поддерживающем game:HttpGet и loadstring.
 
 local IMGUI_URL = "https://raw.githubusercontent.com/Whysuk1me/ImGui-rework/main/dist/ImGui.lua"
 
--- 1. Скачиваем исходник.
-local src, httpErr = pcall(function()
-	return game:HttpGet(IMGUI_URL)
-end)
-if not src or type(httpErr) ~= "string" then
-	warn("[ImGui-rework] HttpGet failed: " .. tostring(httpErr))
+-- ============================================================
+-- HTTP-загрузчик с перебором бэкендов (разные эксплойты = разные API)
+-- ============================================================
+local function fetch(url)
+	-- 1. game:HttpGet(url) — самый распространённый
+	local ok, res = pcall(function() return game:HttpGet(url) end)
+	if ok and type(res) == "string" and #res > 0 then return res end
+
+	-- 2. game:HttpGetAsync(url)
+	if game.HttpGetAsync then
+		ok, res = pcall(function() return game:HttpGetAsync(url) end)
+		if ok and type(res) == "string" and #res > 0 then return res end
+	end
+
+	-- 3. request({url=..., method="GET"}) — современный API
+	local req = request or http_request
+	if req then
+		ok, res = pcall(function() return req({ Url = url, Method = "GET" }) end)
+		if ok and res and type(res.Body) == "string" and #res.Body > 0 then return res.Body end
+		if ok and type(res) == "string" and #res > 0 then return res end
+	end
+
+	-- 4. syn.request — Synapse
+	if syn and syn.request then
+		ok, res = pcall(function() return syn.request({ Url = url, Method = "GET" }) end)
+		if ok and res and type(res.Body) == "string" and #res.Body > 0 then return res.Body end
+	end
+
+	-- 5. http_get глобальная
+	if http_get then
+		ok, res = pcall(function() return http_get(url) end)
+		if ok and type(res) == "string" and #res > 0 then return res end
+	end
+
+	return nil, "no http backend returned data"
+end
+
+-- Диагностика: какие функции вообще существуют в окружении
+local function dumpHttpBackends()
+	local found = {}
+	if game.HttpGet then table.insert(found, "game:HttpGet") end
+	if game.HttpGetAsync then table.insert(found, "game:HttpGetAsync") end
+	if request then table.insert(found, "request") end
+	if http_request then table.insert(found, "http_request") end
+	if syn and syn.request then table.insert(found, "syn.request") end
+	if http_get then table.insert(found, "http_get") end
+	if #found == 0 then table.insert(found, "(ничего не найдено)") end
+	warn("[ImGui-rework] доступные HTTP-бэкенды: " .. table.concat(found, ", "))
+end
+
+-- ============================================================
+-- 1. Скачиваем исходник
+-- ============================================================
+local source, fetchErr = fetch(IMGUI_URL)
+if not source then
+	warn("[ImGui-rework] не удалось скачать бандл: " .. tostring(fetchErr))
+	dumpHttpBackends()
 	return
 end
-local source = httpErr -- строка с Lua-кодом
 
 -- 2. Проверяем, что это реально Lua (а не 404-страница GitHub).
 if #source < 100 or not source:find("Virtual module loader", 1, true) then
-	warn("[ImGui-rework] HttpGet вернул не код ImGui. Первые 200 байт:")
-	warn(source:sub(1, 200))
+	warn("[ImGui-rework] HttpGet вернул не код ImGui. Первые 300 байт:")
+	warn(source:sub(1, 300))
 	return
 end
 

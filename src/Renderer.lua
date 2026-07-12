@@ -43,7 +43,7 @@ local function newDrawing(kind: string): any
 end
 
 function Renderer.new(): RenderPool
-	return {
+	local self = {
 		Line = {},
 		Rect = {},
 		RectFilled = {},
@@ -55,6 +55,8 @@ function Renderer.new(): RenderPool
 
 		_used = {},
 	}
+	setmetatable(self, { __index = Renderer })
+	return self
 end
 
 -- Получить объект из пула (или создать). Все пулы растут по необходимости.

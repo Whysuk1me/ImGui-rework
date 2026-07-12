@@ -240,7 +240,9 @@ export type IdStack = {
 }
 
 function IdStack.new(): IdStack
-	return { stack = {} }
+	local self = { stack = {} }
+	setmetatable(self, { __index = IdStack })
+	return self
 end
 
 function IdStack.Push(self: IdStack, key: any)
@@ -591,11 +593,13 @@ export type DrawList = {
 }
 
 function DrawList.new(): DrawList
-	return {
+	local self = {
 		commands = {},
 		_clipStack = {},
 		_activeClip = nil,
 	}
+	setmetatable(self, { __index = DrawList })
+	return self
 end
 
 function DrawList.Clear(self: DrawList)
@@ -791,7 +795,7 @@ local function newDrawing(kind: string): any
 end
 
 function Renderer.new(): RenderPool
-	return {
+	local self = {
 		Line = {},
 		Rect = {},
 		RectFilled = {},
@@ -803,6 +807,8 @@ function Renderer.new(): RenderPool
 
 		_used = {},
 	}
+	setmetatable(self, { __index = Renderer })
+	return self
 end
 
 -- Получить объект из пула (или создать). Все пулы растут по необходимости.
@@ -1095,7 +1101,7 @@ export type Layout = {
 }
 
 function Layout.new(): Layout
-	return {
+	local self = {
 		origin = Vector2_new(0, 0),
 		cursor = Vector2_new(0, 0),
 		contentMin = Vector2_new(0, 0),
@@ -1107,6 +1113,8 @@ function Layout.new(): Layout
 		sameLine = false,
 		lineWidth = 0,
 	}
+	setmetatable(self, { __index = Layout })
+	return self
 end
 
 -- Сброс к началу клиентской области окна.

@@ -39,11 +39,13 @@ export type DrawList = {
 }
 
 function DrawList.new(): DrawList
-	return {
+	local self = {
 		commands = {},
 		_clipStack = {},
 		_activeClip = nil,
 	}
+	setmetatable(self, { __index = DrawList })
+	return self
 end
 
 function DrawList.Clear(self: DrawList)

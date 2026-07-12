@@ -12,7 +12,9 @@ export type IdStack = {
 }
 
 function IdStack.new(): IdStack
-	return { stack = {} }
+	local self = { stack = {} }
+	setmetatable(self, { __index = IdStack })
+	return self
 end
 
 function IdStack.Push(self: IdStack, key: any)

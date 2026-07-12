@@ -32,7 +32,7 @@ export type Layout = {
 }
 
 function Layout.new(): Layout
-	return {
+	local self = {
 		origin = Vector2_new(0, 0),
 		cursor = Vector2_new(0, 0),
 		contentMin = Vector2_new(0, 0),
@@ -44,6 +44,8 @@ function Layout.new(): Layout
 		sameLine = false,
 		lineWidth = 0,
 	}
+	setmetatable(self, { __index = Layout })
+	return self
 end
 
 -- Сброс к началу клиентской области окна.
